@@ -1,0 +1,56 @@
+name: Analyze Gradle Java Code
+on:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SONAR_HOST_URL:
+        required: true
+    inputs:
+      java-version:
+        description: 'Java Version'
+        type: string
+        required: false
+        default: '17'
+
+jobs:
+  analyze:
+    name: 'Analyze Gradle Java Code'
+    runs-on: [ self-hosted ]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3.6.0
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: adopt
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Check JaCoCo Test Coverage
+        run: ./gradlew jacocoTestCoverageVerification
+
+      - name: Generate JaCoCo Test Coverage Report
+        run: ./gradlew jacocoTestReport
+
+      - name: Perform SonarQube Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: ./gradlew build sonarqube --info
