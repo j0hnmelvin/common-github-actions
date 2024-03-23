@@ -1,0 +1,68 @@
+name: Deploy To Cloud Foundry With App Manifest
+on:
+  workflow_call:
+    secrets:
+      CF_USERNAME:
+        required: true
+      CF_PASSWORD:
+        required: true
+    inputs:
+      app-artifact-name:
+        description: 'Name of the app artifact'
+        type: string
+        required: true
+      manifest:
+        description: 'Name and path of the manifest'
+        type: string
+        required: false
+        default: ./manifest.yml
+      cf-api-url:
+        description: 'This is your API endpoint, the URL of the Cloud Controller in your Cloud Foundry instance'
+        type: string
+        required: true
+      cf-org:
+        description: 'This is the org where you want to deploy your app'
+        type: string
+        required: true
+      cf-space:
+        description: 'This is the space in the org where you want to deploy your app'
+        type: string
+        required: true
+
+jobs:
+  deploy-to-cf:
+    runs-on: [ self-hosted ]
+    steps:
+      - name: 'Download App Artifact'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.app-artifact-name }}
+
+      - name: 'Install CF CLI'
+        shell: bash
+        run: |
+          if [[ ! -f /usr/local/bin/cf ]]; then
+            echo "CF CLI not found! Installing v8 now..."
+            wget -q -O - 'https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github' | sudo tar -xzf - -C /usr/local/bin
+          else
+            echo "CF CLI found! Checking version..."
+            echo "CF CLI version: `cf version`"
+            if [ ! `cf version | grep -q 'cf version 8'` ]; then
+              echo "CF CLI not v8! Upgrading to v8 now..."
+              wget -q -O - 'https://packages.cloudfoundry.org/stable?release=linux64-binary&version=v8&source=github' | sudo tar -xzf - -C /usr/local/bin
+            fi
+          fi
+
+      - name: 'CF Login'
+        run: |
+          cf login \
+          -a ${{ inputs.cf-api-url }} \
+          -u ${{ secrets.CF_USERNAME }} \
+          -p ${{ secrets.CF_PASSWORD }} \
+          -o ${{ inputs.cf-org }} \
+          -s ${{ inputs.cf-space }}
+
+      - name: 'CF Push'
+        run: |
+          cf push \
+            -f ${{ inputs.manifest }}
