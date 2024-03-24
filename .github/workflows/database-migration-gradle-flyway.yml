@@ -1,0 +1,35 @@
+name: Database Migration Gradle Flyway
+on:
+  workflow_call:
+    secrets:
+      DB_URL:
+        required: true # The jdbc url to use to connect to the database
+      DB_USER:
+        required: true
+      DB_PASSWORD:
+        required: true
+      DB_SCHEMAS:
+        required: true # Comma-separated, case-sensitive list of schemas managed by Flyway
+    inputs:
+      placeholder:
+        description: 'Placeholders to replace in SQL migrations'
+        type: string
+        required: false
+        default: '' # e.g. -Pflyway.placeholders.key1="value1" -Pflyway.placeholders.key2="value2"
+
+jobs:
+  setup:
+    name: 'Database Migration Gradle Flyway'
+    runs-on: [self-hosted]
+    steps:
+      - name: 'Flyway Info - Before Database Migration'
+        run: |
+          ./gradlew flywayInfo ${{ inputs.placeholder }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
+
+      - name: 'Flyway Migrate'
+        run: |
+          ./gradlew flywayMigrate ${{ inputs.placeholder }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
+
+      - name: 'Flyway Info - After Database Migration'
+        run: |
+          ./gradlew flywayInfo -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
