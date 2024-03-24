@@ -30,7 +30,8 @@ on:
         required: true
 
 jobs:
-  deploy-to-cf:
+  deploy:
+    name: 'Deploy To Cloud Foundry With App Manifest'
     runs-on: [ self-hosted ]
     steps:
       - name: 'Download App Artifact'
