@@ -11,7 +11,7 @@ on:
       DB_SCHEMAS:
         required: true # Comma-separated, case-sensitive list of schemas managed by Flyway
     inputs:
-      placeholder:
+      placeholders:
         description: 'Placeholders to replace in SQL migrations'
         type: string
         required: false
@@ -24,11 +24,11 @@ jobs:
     steps:
       - name: 'Flyway Info - Before Database Migration'
         run: |
-          ./gradlew flywayInfo ${{ inputs.placeholder }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
+          ./gradlew flywayInfo ${{ inputs.placeholders }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
 
       - name: 'Flyway Migrate'
         run: |
-          ./gradlew flywayMigrate ${{ inputs.placeholder }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
+          ./gradlew flywayMigrate ${{ inputs.placeholders }} -Pflyway.url="${{ secrets.DB_URL }}" -Pflyway.user="${{ env.DB_USER }}" -Pflyway.password="${{ env.DB_PASSWORD }}" -Pflyway.schemas="public"
 
       - name: 'Flyway Info - After Database Migration'
         run: |
